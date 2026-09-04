@@ -119,12 +119,14 @@ def _check_response(response: Dict, metadata: Dict) -> np.ndarray:
     if actions.ndim != 3:
         raise RuntimeError(f"expected actions of shape (B, T, D), got {actions.shape}")
 
+    # Eval clients cache a chunk and index it as `raw_actions[step % action_chunk_size]`
+    # (model2libero_interface.py:159, model2metaworld_interface.py:120), reading the size
+    # from this handshake. A short chunk raises IndexError mid-episode and a long one
+    # silently drops actions, so a disagreement here is a failure, not a warning.
     chunk_size = metadata.get("action_chunk_size")
     if chunk_size is not None and actions.shape[1] != int(chunk_size):
-        logging.warning(
-            "action chunk length %d does not match the server's action_chunk_size %s",
-            actions.shape[1],
-            chunk_size,
+        raise RuntimeError(
+            f"action chunk length {actions.shape[1]} does not match the server's action_chunk_size {chunk_size}"
         )
     return actions
 

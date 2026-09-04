@@ -146,6 +146,13 @@ class DebugServerPolicyTest(unittest.TestCase):
         with self.assertRaisesRegex(RuntimeError, r"\(B, T, D\)"):
             self._run_smoke_test()
 
+    def test_chunk_length_disagreeing_with_the_handshake_fails_the_smoke_test(self):
+        # Eval clients index the cached chunk by the handshake's action_chunk_size,
+        # so a disagreement breaks them at rollout time rather than here.
+        self.policy.response = {"actions": np.zeros((1, CHUNK - 1, ACTION_DIM), dtype=np.float32)}
+        with self.assertRaisesRegex(RuntimeError, "action_chunk_size"):
+            self._run_smoke_test()
+
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO, force=True)
